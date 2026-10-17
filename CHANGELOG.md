@@ -8,6 +8,9 @@ or evidence contracts require a major release and migration guidance.
 
 ## [Unreleased]
 
+- Reject `install-skills.sh --skill` names that are not a single directory name
+  (empty, `.`, `..`, or containing `/`) before anything is written, so a
+  mistyped name cannot point `--replace-existing` outside the skills directory.
 - Preserve consumer edits across successive ordinary toolkit upgrades, including
   installations first adopted without a lock. Unresolved conflicts keep their
   offered canonical hash baseline; each update receives a unique rollback backup.
