@@ -246,7 +246,9 @@ revision with nothing changed is a no-op.
 The standalone installer supports both agent clients. Preview a selected
 Claude Code install with `tooling/install-skills.sh --client claude-code
 --skill fix-ci --dry-run`; use `--client codex` for Codex. An explicit
-`--target` overrides the selected client's default skills directory.
+`--target` overrides the selected client's default skills directory. `--skill` takes a
+skill directory name as `--list` prints it; paths, `.`, and `..` are rejected
+before anything is written.
 
 The five action skills ship seeded tasks and per-client `VERIFICATION.md`
 ledgers. Installation is not evidence that an agent completed a task.
