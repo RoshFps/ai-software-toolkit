@@ -50,6 +50,47 @@ need_command() {
   command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"
 }
 
+# Copy a skill directory with rsync when it is installed, and with cp and find
+# otherwise, as in minimal containers and CI images. Modes match rsync -a:
+# install copies everything, merge copies only missing files, replace makes
+# dst an exact copy of src.
+copy_tree() {
+  local mode="$1"
+  local src="$2"
+  local dst="$3"
+
+  if command -v rsync >/dev/null 2>&1; then
+    case "$mode" in
+      install) rsync -a "$src/" "$dst/" ;;
+      merge) rsync -a --ignore-existing "$src/" "$dst/" ;;
+      replace) rsync -a --delete "$src/" "$dst/" ;;
+    esac
+    return
+  fi
+
+  case "$mode" in
+    install)
+      mkdir -p "$dst"
+      cp -pR "$src/." "$dst/"
+      ;;
+    merge)
+      (cd "$src" && find . -type d) | while IFS= read -r dir; do
+        mkdir -p "$dst/$dir"
+      done
+      (cd "$src" && find . ! -type d) | while IFS= read -r file; do
+        if [ ! -e "$dst/$file" ] && [ ! -L "$dst/$file" ]; then
+          cp -pR "$src/$file" "$dst/$file"
+        fi
+      done
+      ;;
+    replace)
+      rm -rf "$dst"
+      mkdir -p "$dst"
+      cp -pR "$src/." "$dst/"
+      ;;
+  esac
+}
+
 list_skills() {
   find "$source_dir" -mindepth 2 -maxdepth 2 -name SKILL.md -print |
     sed "s#^$source_dir/##; s#/SKILL.md\$##" |
@@ -137,18 +178,18 @@ sync_dir() {
   mkdir -p "$target_dir"
   case "$mode" in
     install)
-      rsync -a "$src/" "$dst/"
+      copy_tree install "$src" "$dst"
       printf 'Installed %s -> %s\n' "$name" "$dst"
       ;;
     skip)
       printf 'Skipped existing %s at %s\n' "$name" "$dst"
       ;;
     merge)
-      rsync -a --ignore-existing "$src/" "$dst/"
+      copy_tree merge "$src" "$dst"
       printf 'Merged missing files for %s -> %s\n' "$name" "$dst"
       ;;
     replace)
-      rsync -a --delete "$src/" "$dst/"
+      copy_tree replace "$src" "$dst"
       printf 'Replaced %s -> %s\n' "$name" "$dst"
       ;;
     *)
@@ -221,7 +262,6 @@ esac
 [ -n "$target_dir" ] || target_dir="$default_target"
 
 need_command find
-need_command rsync
 
 [ -d "$source_dir" ] || die "source skills directory not found: $source_dir"
 

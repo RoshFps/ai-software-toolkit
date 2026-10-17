@@ -1,0 +1,104 @@
+"""Check that install-skills.sh copies the same files with and without rsync."""
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[2]
+SCRIPT = ROOT / "tooling" / "install-skills.sh"
+
+
+def path_without_rsync(directory):
+    """Return a PATH whose commands match the current one, minus rsync."""
+    bin_dir = Path(directory) / "bin"
+    bin_dir.mkdir()
+    for entry in os.environ.get("PATH", "").split(os.pathsep):
+        if not os.path.isdir(entry):
+            continue
+        for name in os.listdir(entry):
+            link = bin_dir / name
+            if name != "rsync" and not link.exists():
+                link.symlink_to(Path(entry) / name)
+    return str(bin_dir)
+
+
+def snapshot(directory):
+    return {
+        str(path.relative_to(directory)): path.read_bytes()
+        for path in sorted(Path(directory).rglob("*"))
+        if path.is_file()
+    }
+
+
+class CopyWithoutRsyncTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        root = Path(self.temp.name)
+        self.source = root / "source"
+        skill = self.source / "demo"
+        (skill / "references").mkdir(parents=True)
+        (skill / "SKILL.md").write_text("canonical\n")
+        (skill / "references" / "guide.md").write_text("guide\n")
+        self.no_rsync = path_without_rsync(root)
+
+    def run_install(self, target, *mode, path=None):
+        env = dict(os.environ)
+        if path is not None:
+            env["PATH"] = path
+        return subprocess.run(
+            ["bash", str(SCRIPT), "--source", str(self.source), "--target", str(target),
+             "--skill", "demo", *mode],
+            cwd=ROOT, env=env, capture_output=True, text=True,
+        )
+
+    def seeded_target(self, name):
+        target = Path(self.temp.name) / name / "skills"
+        installed = target / "demo"
+        installed.mkdir(parents=True)
+        (installed / "SKILL.md").write_text("local edit\n")
+        (installed / "local-only.md").write_text("local\n")
+        return target
+
+    def test_rsync_is_not_on_the_test_path(self):
+        self.assertIsNone(shutil.which("rsync", path=self.no_rsync))
+
+    def test_each_mode_matches_the_expected_files_without_rsync(self):
+        expected = {
+            (): {"demo/SKILL.md": b"canonical\n", "demo/references/guide.md": b"guide\n"},
+            ("--merge-existing",): {
+                "demo/SKILL.md": b"local edit\n",
+                "demo/local-only.md": b"local\n",
+                "demo/references/guide.md": b"guide\n",
+            },
+            ("--replace-existing",): {
+                "demo/SKILL.md": b"canonical\n",
+                "demo/references/guide.md": b"guide\n",
+            },
+        }
+        for mode, files in expected.items():
+            with self.subTest(mode=mode):
+                label = mode[0].strip("-") if mode else "install"
+                target = (
+                    Path(self.temp.name) / label / "skills" if not mode else self.seeded_target(label)
+                )
+                result = self.run_install(target, *mode, path=self.no_rsync)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(snapshot(target), files)
+
+    @unittest.skipUnless(shutil.which("rsync"), "rsync is not installed")
+    def test_fallback_matches_rsync(self):
+        for mode in ((), ("--merge-existing",), ("--replace-existing",)):
+            with self.subTest(mode=mode):
+                label = mode[0].strip("-") if mode else "install"
+                with_rsync = self.seeded_target(label + "-rsync") if mode else Path(self.temp.name) / (label + "-rsync")
+                without = self.seeded_target(label + "-cp") if mode else Path(self.temp.name) / (label + "-cp")
+                self.assertEqual(self.run_install(with_rsync, *mode).returncode, 0)
+                self.assertEqual(self.run_install(without, *mode, path=self.no_rsync).returncode, 0)
+                self.assertEqual(snapshot(with_rsync), snapshot(without))
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -53,8 +53,9 @@ tooling/install-skills.sh --all --target "$HOME/.codex/skills"
 - Existing target skills are not overwritten by default.
 - In interactive shells, the installer prompts on each existing skill: skip, merge missing files only, or replace.
 - In non-interactive shells, existing skills are skipped unless `--merge-existing` or `--replace-existing` is provided.
-- `--merge-existing` uses `rsync --ignore-existing`, so existing local files are preserved.
-- `--replace-existing` uses `rsync --delete` and should be used only when the canonical copy should fully replace the installed skill.
+- `--merge-existing` copies only missing files (`rsync --ignore-existing`), so existing local files are preserved.
+- `--replace-existing` makes the installed skill an exact copy (`rsync --delete`) and should be used only when the canonical copy should fully replace the installed skill.
+- `rsync` is used when installed; otherwise the installer falls back to `cp` and `find` with the same results, so `--list`, `--dry-run`, and installs work without it.
 - `_shared-project-ops` is installed automatically when present because audit skills depend on it.
 - Do not install machine-local or personal-memory skills into this standards bundle.
 - Use selected installs when a repo or machine should not receive the full skill set.

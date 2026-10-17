@@ -8,6 +8,9 @@ or evidence contracts require a major release and migration guidance.
 
 ## [Unreleased]
 
+- `tooling/install-skills.sh` no longer requires `rsync`: `--list` and
+  `--dry-run` never needed it, and installs fall back to `cp` and `find` with
+  the same install, merge, and replace results when it is missing.
 - Preserve consumer edits across successive ordinary toolkit upgrades, including
   installations first adopted without a lock. Unresolved conflicts keep their
   offered canonical hash baseline; each update receives a unique rollback backup.
