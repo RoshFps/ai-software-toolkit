@@ -31,8 +31,11 @@ def configuration(root: Path) -> dict:
         info = os.fstat(stream.fileno())
         if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= MAX_BYTES:
             raise ValueError("commands configuration must be a bounded regular file")
-        document = json.loads(stream.read(MAX_BYTES + 1))
-    if not isinstance(document, dict) or document.get("version") != 1 or isinstance(document.get("version"), bool):
+        data = stream.read(MAX_BYTES + 1)
+        if len(data) > MAX_BYTES:
+            raise ValueError("commands configuration grew beyond the supported size")
+        document = json.loads(data)
+    if not isinstance(document, dict) or type(document.get("version")) is not int or document.get("version") != 1:
         raise ValueError("commands configuration requires version 1")
     if set(document) - {"version", "commands", "setup", "working_directory"}:
         raise ValueError("unknown commands configuration fields")

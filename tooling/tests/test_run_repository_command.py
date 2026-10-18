@@ -72,7 +72,7 @@ class CommandRunnerTests(unittest.TestCase):
             self.assertEqual(self.invoke(), 1)
 
     def test_rejects_invalid_configuration(self):
-        for text in ("{}", "[]", "bad", '{"version":true}', '{"version":1,"unknown":1}', '{"version":1,"commands":[]}', '{"version":1,"commands":{"unknown":"true"}}', '{"version":1,"commands":{"build":42}}', '{"version":1,"setup":null}', "x" * (MODULE.MAX_BYTES + 1), ""):
+        for text in ("{}", "[]", "bad", '{"version":1.0}', '{"version":true}', '{"version":1,"unknown":1}', '{"version":1,"commands":[]}', '{"version":1,"commands":{"unknown":"true"}}', '{"version":1,"commands":{"build":42}}', '{"version":1,"setup":null}', "x" * (MODULE.MAX_BYTES + 1), ""):
             with self.subTest(text=text[:80]):
                 self.config.write_text(text)
                 with self.assertRaises(ValueError):
@@ -117,3 +117,11 @@ class CommandRunnerTests(unittest.TestCase):
         self.assertIn("if: ${{ needs.configuration.outputs.configured == 'true' }}", text)
         self.assertIn("--command changed-code-coverage --configured", text)
         self.assertNotIn("pull_request_target", text)
+
+    def test_rejects_configuration_that_grows_after_stat(self):
+        self.config.write_text('{"version":1}' + " " * MODULE.MAX_BYTES)
+        info = self.config.stat()
+        small = os.stat_result((*info[:6], 12, *info[7:]))
+        with patch.object(MODULE.os, "fstat", return_value=small):
+            with self.assertRaisesRegex(ValueError, "grew beyond"):
+                MODULE.configuration(self.root)
