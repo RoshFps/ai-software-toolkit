@@ -353,3 +353,11 @@ The installed workflows and reusable templates use the pinned
 `python3 tooling/sync_workflow_templates.py --write` after changing an installed
 action pin so consumers receive the same release. Permissions and enforcement
 choices remain owned by each repository.
+
+## Artifact download action maintenance
+
+The installed workflows and reusable templates use the pinned
+`actions/download-artifact` v8.0.2 patch release. Regenerate templates with
+`python3 tooling/sync_workflow_templates.py --write` after changing an installed
+action pin so consumers receive the same release. Permissions and enforcement
+choices remain owned by each repository.
