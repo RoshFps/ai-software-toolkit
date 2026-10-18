@@ -156,7 +156,20 @@ artifact-provenance path.
 
 ## Scorecard flow
 
-PR scope and scorecard metadata jobs check out only the trusted base runtime.
+PR scope and scorecard metadata jobs use the workflow-file commit
+(`github.workflow_sha`) for their trusted runtime and policy on
+`pull_request_target` and manual runs. This keeps newly installed helpers
+available even when a PR event still reports an older base commit. Both jobs
+accept PR `edited` events so metadata can be refreshed after a runtime update.
+The scorecard's `pull_request_review` trigger retains the event base commit:
+review workflows run on a PR merge ref, which is not a trusted runtime source.
+See GitHub's [workflow context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#github-context)
+and [event semantics](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request_target).
+
+Each job records the actual checked-out runtime/policy SHA in its summary.
+Event base/head SHAs remain comparison inputs; source-binding `base_sha` and
+the evidence collector's `--trusted-base-revision` retain their existing PR
+comparison and provider-verification meaning, independently of runtime checkout.
 The trusted metadata helper fetches full Git ancestry into a fresh bare
 repository through the base repository's PR ref and verifies the exact event
 base/head commits. It uses ephemeral authentication for private repositories
@@ -331,10 +344,33 @@ commits the installation to an `ai-toolkit/setup-<tag>` branch and opens a
 pull request with `gh`. Discovered repository commands appear in the preview
 as `gh variable set` lines; the workflow never writes them into the tree.
 
+## CodeQL action maintenance
+
+Keep the CodeQL initialization and analysis steps on the same pinned release.
+The installed workflow and reusable template both use CodeQL v4.38.3;
+regenerate templates with `python3 tooling/sync_workflow_templates.py --write`
+when changing installed action pins. This maintenance does not change workflow
+permissions or a consuming repository's enforcement choices.
+
+Dependabot groups CodeQL action version updates in one pull request using the
+`github/codeql-action/*` dependency pattern. This keeps initialization, analysis
+and any autobuild action updates together. Template regeneration is still
+needed because Dependabot updates installed GitHub Actions workflows only.
+The group controls update packaging, not approval, automatic merging or
+required-check policy.
+
 ## Artifact upload action maintenance
 
 The installed workflows and reusable templates use the pinned
-\`actions/upload-artifact\` v7.0.2 patch release. Regenerate templates with
-\`python3 tooling/sync_workflow_templates.py --write\` after changing an installed
+`actions/upload-artifact` v7.0.2 patch release. Regenerate templates with
+`python3 tooling/sync_workflow_templates.py --write` after changing an installed
+action pin so consumers receive the same release. Permissions and enforcement
+choices remain owned by each repository.
+
+## Artifact download action maintenance
+
+The installed workflows and reusable templates use the pinned
+`actions/download-artifact` v8.0.2 patch release. Regenerate templates with
+`python3 tooling/sync_workflow_templates.py --write` after changing an installed
 action pin so consumers receive the same release. Permissions and enforcement
 choices remain owned by each repository.
