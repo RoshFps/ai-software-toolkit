@@ -8,6 +8,9 @@ or evidence contracts require a major release and migration guidance.
 
 ## [Unreleased]
 
+- The Python demo's `ai_review_evidence.py` follows GitHub's review pagination,
+  so a configured review of the current head on page two or later is no longer
+  reported as `not_run`, and its API requests now time out after 20 seconds.
 - Add optional fresh-JUnit test-integrity and changed-code coverage helpers,
   TypeScript lint/architecture configurations, and executable defensive-test
   recipes. Each consumer chooses its commands, scope, targets, and mode;
