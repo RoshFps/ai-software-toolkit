@@ -11,6 +11,14 @@ or evidence contracts require a major release and migration guidance.
 - The Python demo's `ai_review_evidence.py` follows GitHub's review pagination,
   so a configured review of the current head on page two or later is no longer
   reported as `not_run`, and its API requests now time out after 20 seconds.
+- Add optional fresh-JUnit test-integrity and changed-code coverage helpers,
+  TypeScript lint/architecture configurations, and executable defensive-test
+  recipes. Each consumer chooses its commands, scope, targets, and mode;
+  shared profiles, rulesets, and required checks are unchanged. Discovery no
+  longer proposes recognizable compiler-only scripts as real linting.
+  Label the supplied configurations as TypeScript examples and document
+  language-specific alternatives and report-format adaptation, including Java.
+
 - Preserve consumer edits across successive ordinary toolkit upgrades, including
   installations first adopted without a lock. Unresolved conflicts keep their
   offered canonical hash baseline; each update receives a unique rollback backup.
