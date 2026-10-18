@@ -442,3 +442,19 @@ execution timestamps, duration, and conclusion. These facts do not imply test
 counts or security finding totals. Missing measurements are explicitly named;
 no numerical result is inferred from a passing check. See the
 [execution evidence contract](proof/implementation.md#optional-check-execution-facts) for upgrade compatibility.
+
+### Fork pull-request metadata safety
+
+The PR scope and scorecard workflows check out only the trusted base runtime.
+The trusted helper (`tooling/fetch_pr_metadata.py`) fetches candidate Git objects into a fresh bare repository through the base
+repository's `refs/pull/<number>/head`, with ephemeral authentication for private
+repositories. Both resolved commits must match the event's exact base and head;
+a moving PR ref fails the run and requires a new event or rerun. Scope inspection
+uses full ancestry without a candidate checkout. Candidate code, Git hooks,
+submodules, and filters are never executed by these metadata jobs.
+
+The scorecard reads only `.proof/policy.yaml`: its parent must be a Git tree and
+its leaf a regular, non-executable blob of at most 1 MiB. Symlinks and gitlinks
+are rejected before materialization. The trusted parser validates that data;
+enforcement continues to use the trusted base policy. This changes neither
+repository-selected control modes nor required-check settings.

@@ -110,6 +110,7 @@ def runtime_sources(target: Path) -> list[InstallItem]:
         "configure.py": ROOT / "tooling/configure_proof.py",
         "scan.py": ROOT / "tooling/scan_repository.py",
         "doctor.py": ROOT / "tooling/doctor.py",
+        "fetch_pr_metadata.py": ROOT / "tooling/fetch_pr_metadata.py",
         "github_evidence.py": ROOT / "tooling/github_evidence.py",
         "produce.py": PRODUCER,
         "adapter.py": ROOT / "tooling/provider_adapter.py",

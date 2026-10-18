@@ -153,21 +153,15 @@ class ActionDistributionTests(unittest.TestCase):
                 self.assertIn("timeout-minutes:", text)
                 refs = re.findall(r"uses:\s+[^@\s]+@([^\s]+)", text)
                 self.assertTrue(all(re.fullmatch(r"[0-9a-f]{40}", ref) for ref in refs))
-                if "actions/checkout@" in text and filename not in {"change-scope.yml", "pr-metadata.yml"}:
+                if "actions/checkout@" in text and filename not in {"change-scope.yml", "pr-metadata.yml", "proof-scorecard.yml"}:
                     self.assertIn("ref: ${{ github.event.pull_request.head.sha || github.sha }}", text)
                     self.assertIn("persist-credentials: false", text)
                 if filename == "change-scope.yml":
                     self.assertIn("pull_request_target:", text)
                     self.assertIn("ref: ${{ github.event.pull_request.base.sha || github.sha }}", text)
-                    self.assertIn("ref: ${{ github.event.pull_request.head.sha || github.sha }}", text)
-                    self.assertIn(
-                        'git -C candidate fetch --no-tags origin "${BASE_SHA}"',
-                        text,
-                    )
-                    self.assertNotIn(
-                        'git -C candidate fetch --no-tags --depth=1 origin "${BASE_SHA}"',
-                        text,
-                    )
+                    self.assertIn("trusted/.proof/fetch_pr_metadata.py", text)
+                    self.assertNotIn("path: candidate", text)
+                    self.assertNotIn("allow-unsafe-pr-checkout", text)
                     self.assertNotIn("python3 candidate/", text)
                 if filename == "pr-metadata.yml":
                     self.assertIn("pull_request_target:", text)
@@ -272,10 +266,11 @@ class ActionDistributionTests(unittest.TestCase):
                 self.assertIn("actions: read", text)
                 self.assertIn("path: .proof-trusted", text)
                 self.assertIn("ref: ${{ github.event.pull_request.base.sha || github.sha }}", text)
-                self.assertIn("path: .proof-candidate", text)
-                self.assertIn("ref: ${{ github.event.pull_request.head.sha || github.sha }}", text)
-                self.assertIn("repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}", text)
-                self.assertIn("sparse-checkout:", text)
+                self.assertIn("--policy-output .proof-candidate/.proof/policy.yaml", text)
+                self.assertIn("HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}", text)
+                self.assertIn(".proof-trusted/.proof/fetch_pr_metadata.py", text)
+                self.assertNotIn("sparse-checkout:", text)
+                self.assertNotIn("allow-unsafe-pr-checkout", text)
                 self.assertIn("python3 .proof-trusted/.proof/github_evidence.py", text)
                 self.assertIn("python3 .proof-trusted/.proof/scorecard.py", text)
                 self.assertNotIn("python3 .proof-candidate/", text)
