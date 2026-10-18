@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "setup": "python3 -m pip install --disable-pip-version-check -r tooling/requirements-ci.txt",
+  "working_directory": ".",
+  "commands": {
+    "build": "tooling/build.sh",
+    "unit-tests": "tooling/test.sh",
+    "format-and-lint": "tooling/lint.sh",
+    "migration-validation": "python3 tooling/validators/validate_no_migrations.py",
+    "changed-code-coverage": "tooling/changed_code_coverage.sh"
+  }
+}

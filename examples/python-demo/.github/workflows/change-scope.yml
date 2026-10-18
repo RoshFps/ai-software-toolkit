@@ -32,17 +32,18 @@ jobs:
           path: trusted
           fetch-depth: 1
           persist-credentials: false
-      - name: Check out candidate Git data
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          path: candidate
-          fetch-depth: 0
-          persist-credentials: false
+      - name: Fetch candidate metadata without checkout
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+        run: |
+          python3 trusted/.proof/fetch_pr_metadata.py \
+            --repository-root candidate
       - name: Inspect exact PR scope with trusted code and policy
         run: |
           set -euo pipefail
-          git -C candidate fetch --no-tags origin "${BASE_SHA}"
           python3 trusted/.proof/configure.py \
             --policy trusted/.proof/policy.yaml \
             --profiles trusted/.proof/profiles.yaml \

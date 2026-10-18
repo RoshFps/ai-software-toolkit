@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "commands": {
+    "build": "python3 -m compileall -q app.py test_app.py tools .proof",
+    "unit-tests": "python3 -m unittest discover -s . -p 'test_*.py'"
+  }
+}

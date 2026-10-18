@@ -52,12 +52,23 @@ publishing.
 | `semgrep-ce.yml` | `Semgrep CE` | Installed tested rules; no secret |
 | `gitleaks.yml` | `Gitleaks` | Full Git history; no secret |
 
-Repository command workflows use optional `PROOF_SETUP_COMMAND` and
-default `PROOF_WORKING_DIRECTORY` to `.`. Build, unit tests, format/lint,
+Repository command workflows accept nonempty `PROOF_*` environment variables
+first, then optional repository-owned `.proof/commands.json`. The checked-in
+file supports fork PR runs where repository variables are unavailable. Its
+`commands` keys are `build`, `unit-tests`, `format-and-lint`,
+`migration-validation`, and `changed-code-coverage`; optional `setup` and
+`working_directory` correspond to `PROOF_SETUP_COMMAND` and
+`PROOF_WORKING_DIRECTORY` (default `.`). The installer does not create or
+overwrite this file. The [command configuration guide](../docs/quickstart.md#checked-in-producer-commands-for-fork-ci)
+shows the versioned JSON format and validation rules.
+
+Commands execute only in ordinary `pull_request` jobs with a read-only token.
+Setup failures and producer failures retain their nonzero exit status. Build, unit tests, format/lint,
 and migration validation always create their named job; an absent command
 fails the job so a promoted required context cannot be satisfied by a skipped
-producer. Changed-code coverage remains inactive until configured and
-advisory. Local scans continue to represent absent commands as `NO RESULT`.
+producer. Changed-code coverage uses a separate configuration-discovery job;
+its producer remains skipped when neither source supplies a command. Selecting
+commands does not change repository-selected advisory modes or required checks. Local scans continue to represent absent commands as `NO RESULT`.
 
 Coverage runs use a readable title such as `Coverage check · PR #32`; the
 check context stays `Changed Code Coverage` so provider contracts and rulesets
@@ -138,6 +149,21 @@ invoke a release scorecard, so it is not yet a fully runnable Proof
 artifact-provenance path.
 
 ## Scorecard flow
+
+PR scope and scorecard metadata jobs check out only the trusted base runtime.
+The trusted metadata helper fetches full Git ancestry into a fresh bare
+repository through the base repository's PR ref and verifies the exact event
+base/head commits. It uses ephemeral authentication for private repositories
+without persisting credentials or checking out candidate code.
+
+Scope inspection reads Git objects directly. Candidate policy validation reads
+only `.proof/policy.yaml`, after verifying its parent tree, regular
+non-executable blob mode, and 1 MiB size bound. The trusted parser validates the
+materialized data; scorecard enforcement continues to use the trusted base
+policy. Candidate hooks, submodules, and executable runtime are not run by
+these metadata jobs. A moving PR head fails the binding check and requires a
+new event or rerun.
+
 
 ```text
 provider workflows in parallel

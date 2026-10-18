@@ -170,6 +170,7 @@ class InstalledScorecardWorkflowTests(unittest.TestCase):
             self.assertEqual(
                 invoked_scripts,
                 [
+                    ".proof-trusted/.proof/fetch_pr_metadata.py",
                     ".proof-trusted/.proof/configure.py",
                     ".proof-trusted/.proof/github_evidence.py",
                     ".proof-trusted/.proof/github_evidence.py",
