@@ -50,6 +50,41 @@ need_command() {
   command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"
 }
 
+# Remove redundant separators and dot components without resolving symlinks.
+# Parent components retain their filesystem meaning until physical_path checks.
+normalize_path() {
+  local path="$1" part result="" remainder
+  case "$path" in /*) ;; *) path="$PWD/$path" ;; esac
+  remainder="$path/"
+  while [ -n "$remainder" ]; do
+    part="${remainder%%/*}"
+    remainder="${remainder#*/}"
+    case "$part" in ""|.) continue ;; esac
+    result="$result/$part"
+  done
+  printf '%s\n' "${result:-/}"
+}
+
+# Resolve existing ancestors physically, appending missing directory components.
+# No directory is created while checking source/destination containment.
+physical_path() {
+  local path="$1" parent leaf
+  if [ -d "$path" ]; then
+    (cd "$path" && pwd -P)
+  else
+    parent="${path%/*}"
+    leaf="${path##*/}"
+    [ -n "$parent" ] || parent=/
+    parent="$(physical_path "$parent")" || return
+    if [ "$leaf" = ".." ]; then
+      parent="${parent%/*}"
+      printf '%s\n' "${parent:-/}"
+    else
+      printf '%s/%s\n' "${parent%/}" "$leaf"
+    fi
+  fi
+}
+
 # Copy a skill directory with rsync when it is installed, and with cp and find
 # otherwise, as in minimal containers and CI images. Modes match rsync -a:
 # install copies everything, merge copies only missing files, replace makes
@@ -313,6 +348,14 @@ fi
 for skill in "${skills[@]}"; do
   validate_skill_name "$skill"
 done
+
+# Check the complete roots before even installing the shared bundle.
+target_dir="$(normalize_path "$target_dir")"
+[ ! -L "$target_dir" ] || die "target is a symlink: $target_dir"
+source_path="$(physical_path "$(normalize_path "$source_dir")")" || die "cannot resolve source"
+target_path="$(physical_path "$target_dir")" || die "cannot resolve target"
+case "${target_path%/}/" in "${source_path%/}/"*) die "source and target overlap" ;; esac
+case "${source_path%/}/" in "${target_path%/}/"*) die "source and target overlap" ;; esac
 
 if [ -d "$source_dir/_shared-project-ops" ]; then
   sync_dir "_shared-project-ops"

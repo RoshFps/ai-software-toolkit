@@ -68,6 +68,9 @@ Install behavior:
 - `--merge-existing` preserves local files and adds missing canonical files.
 - `--replace-existing` fully replaces the target skill and should be used deliberately.
 
+Source and target roots must not overlap (including aliases resolved through
+existing filesystem links); this is checked before installing any skill.
+Redundant path separators and dot components are normalized before link checks.
 For both copy backends, a write operation refuses a symlink at the target
 skills directory or skill destination, or any symlink inside an existing skill.
 This includes dangling links. Resolve these links explicitly before merging or

@@ -118,6 +118,32 @@ class CopyWithoutRsyncTests(unittest.TestCase):
                         self.assertEqual(snapshot(outside), before)
                         self.assertFalse((outside / "missing").exists())
 
+    def test_source_destination_overlap_preserves_source(self):
+        for path in (self.no_rsync, None):
+            for target in (self.source, self.source / "nested", self.source.parent,
+                           self.source / "missing" / ".."):
+                with self.subTest(path=path, target=target):
+                    before = snapshot(self.source)
+                    result = self.run_install(target, "--replace-existing", path=path)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("overlap", result.stderr)
+                    self.assertEqual(snapshot(self.source), before)
+                    self.assertFalse((self.source / "nested").exists())
+
+    def test_target_link_with_redundant_components_preserves_external_tree(self):
+        outside = Path(self.temp.name) / "outside"
+        outside.mkdir()
+        (outside / "sentinel").write_text("unchanged")
+        link = Path(self.temp.name) / "link"
+        link.symlink_to(outside, target_is_directory=True)
+        for path in (self.no_rsync, None):
+            for suffix in ("//", "/./", "/.//."):
+                with self.subTest(path=path, suffix=suffix):
+                    result = self.run_install(str(link) + suffix, "--replace-existing", path=path)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("symlink", result.stderr)
+                    self.assertEqual(snapshot(outside), {"sentinel": b"unchanged"})
+
     @unittest.skipUnless(shutil.which("rsync"), "rsync is not installed")
     def test_fallback_matches_rsync(self):
         for mode in ((), ("--merge-existing",), ("--replace-existing",)):
