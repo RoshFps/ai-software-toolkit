@@ -144,12 +144,24 @@ choose_existing_mode() {
   done
 }
 
+# A skill name is one directory name. Anything else (an empty name, ".", "..",
+# or a path with "/") would point src or dst outside the skills directories,
+# and --replace-existing deletes files in dst that the source does not have.
+validate_skill_name() {
+  case "$1" in
+    ''|.|..|*/*)
+      die "invalid skill name: '$1' (expected a single directory name; see --list)"
+      ;;
+  esac
+}
+
 sync_dir() {
   local name="$1"
   local src="$source_dir/$name"
   local dst="$target_dir/$name"
   local mode
 
+  validate_skill_name "$name"
   [ -d "$src" ] || die "skill not found: $name"
   if [ "$name" != "_shared-project-ops" ]; then
     [ -f "$src/SKILL.md" ] || die "missing SKILL.md for skill: $name"
@@ -297,6 +309,10 @@ if [ "$install_all" -eq 1 ]; then
     skills+=("$skill")
   done < <(list_skills)
 fi
+
+for skill in "${skills[@]}"; do
+  validate_skill_name "$skill"
+done
 
 if [ -d "$source_dir/_shared-project-ops" ]; then
   sync_dir "_shared-project-ops"

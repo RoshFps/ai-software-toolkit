@@ -256,6 +256,9 @@ This includes dangling links. Resolve these links explicitly before merging or
 replacing a skill; skipping an existing skill remains read-only. Use a trusted
 local destination that other processes do not modify during installation.
 
+`--skill` takes a skill directory name as `--list` prints it; paths, `.`, and
+`..` are rejected before anything is written.
+
 The five action skills ship seeded tasks and per-client `VERIFICATION.md`
 ledgers. Installation is not evidence that an agent completed a task.
 `tooling/validate-skills.py` rejects duplicate client rows and requires each

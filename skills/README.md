@@ -49,6 +49,8 @@ One canonical source serves both clients: the `SKILL.md` frontmatter (`name`,
 `description`) is what Claude Code reads, and `agents/openai.yaml` carries the
 Codex interface. `--client` only changes the default destination. `rsync` is optional: without
 it the installer copies with `cp` and `find` and produces the same result.
+`--skill` accepts only a skill directory name from `--list`; paths, `.`,
+and `..` are rejected.
 
 The [`ai-toolkit` CLI](../docs/install.md) installs the same canonical skills
 for Codex (`.agents/skills`) and Claude Code (`.claude/skills`) without
