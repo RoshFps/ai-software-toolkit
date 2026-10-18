@@ -250,6 +250,12 @@ Claude Code install with `tooling/install-skills.sh --client claude-code
 `rsync` when it is available and otherwise falls back to `cp` and `find` with
 the same install, merge, and replace results.
 
+For both copy backends, a write operation refuses a symlink at the target
+skills directory or skill destination, or any symlink inside an existing skill.
+This includes dangling links. Resolve these links explicitly before merging or
+replacing a skill; skipping an existing skill remains read-only. Use a trusted
+local destination that other processes do not modify during installation.
+
 The five action skills ship seeded tasks and per-client `VERIFICATION.md`
 ledgers. Installation is not evidence that an agent completed a task.
 `tooling/validate-skills.py` rejects duplicate client rows and requires each

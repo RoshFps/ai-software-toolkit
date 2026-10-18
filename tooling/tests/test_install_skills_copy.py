@@ -88,6 +88,36 @@ class CopyWithoutRsyncTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(snapshot(target), files)
 
+    def test_destination_symlinks_fail_without_external_writes(self):
+        for backend, path in (("fallback", self.no_rsync), ("native", None)):
+            for location in ("target", "skill", "nested", "dangling"):
+                for mode in ("--merge-existing", "--replace-existing"):
+                    with self.subTest(backend=backend, location=location, mode=mode):
+                        root = Path(self.temp.name) / f"{backend}-{location}-{mode}"
+                        root.mkdir()
+                        outside = root / "outside"
+                        outside.mkdir()
+                        sentinel = outside / "sentinel"
+                        sentinel.write_text("untouched")
+                        target = root / "skills"
+                        if location == "target":
+                            target.symlink_to(outside, target_is_directory=True)
+                        elif location == "skill":
+                            target.mkdir()
+                            (target / "demo").symlink_to(outside, target_is_directory=True)
+                        else:
+                            (target / "demo").mkdir(parents=True)
+                            destination = outside if location == "nested" else outside / "missing"
+                            (target / "demo" / "references").symlink_to(
+                                destination, target_is_directory=True,
+                            )
+                        before = snapshot(outside)
+                        result = self.run_install(target, mode, path=path)
+                        self.assertNotEqual(result.returncode, 0, result.stdout)
+                        self.assertIn("symlink", result.stderr)
+                        self.assertEqual(snapshot(outside), before)
+                        self.assertFalse((outside / "missing").exists())
+
     @unittest.skipUnless(shutil.which("rsync"), "rsync is not installed")
     def test_fallback_matches_rsync(self):
         for mode in ((), ("--merge-existing",), ("--replace-existing",)):

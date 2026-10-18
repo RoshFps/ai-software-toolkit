@@ -66,6 +66,12 @@ Install behavior:
 - `--merge-existing` preserves local files and adds missing canonical files.
 - `--replace-existing` fully replaces the target skill and should be used deliberately.
 
+For both copy backends, a write operation refuses a symlink at the target
+skills directory or skill destination, or any symlink inside an existing skill.
+This includes dangling links. Resolve these links explicitly before merging or
+replacing a skill; skipping an existing skill remains read-only. Use a trusted
+local destination that other processes do not modify during installation.
+
 ## Skill Catalog
 
 ### Action skills

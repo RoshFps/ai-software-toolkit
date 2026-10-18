@@ -175,6 +175,19 @@ sync_dir() {
     return
   fi
 
+  # Reject pre-existing links before either backend can traverse destination
+  # directories. Include dangling links; find does not follow directory links.
+  # Skipping an existing skill remains a read-only operation.
+  if [ "$mode" != "skip" ]; then
+    [ ! -L "${target_dir%/}" ] || die "target is a symlink: $target_dir"
+    [ ! -L "$dst" ] || die "skill destination is a symlink: $dst"
+    if [ -d "$dst" ]; then
+      local destination_links
+      destination_links="$(find "$dst" -type l -print)" || die "cannot inspect destination: $dst"
+      [ -z "$destination_links" ] || die "skill destination contains a symlink: $dst"
+    fi
+  fi
+
   mkdir -p "$target_dir"
   case "$mode" in
     install)
