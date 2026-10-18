@@ -146,3 +146,9 @@ it with `--refresh-existing --scorecard-badge`, then follow the
 The public projection is aggregate-only; detailed evidence is excluded from
 Pages and remains in the source Actions artifact under normal repository
 access. Publication never changes `allow`, `block`, or branch protection.
+
+The repository-owned `.proof/commands.json` selects the build and test commands
+above for fork pull requests where repository variables are unavailable. It is
+not installer-managed. Lint, migration and changed-code coverage commands are
+not supplied by this small demo; consuming repositories select their own real
+producers before activating those controls.

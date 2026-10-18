@@ -15,9 +15,30 @@ permissions:
   contents: read
 
 jobs:
+  configuration:
+    name: Coverage configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      configured: ${{ steps.selection.outputs.configured }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Select explicitly configured coverage producer
+        id: selection
+        env:
+          PROOF_CHANGED_COVERAGE_COMMAND: ${{ vars.PROOF_CHANGED_COVERAGE_COMMAND }}
+          PROOF_WORKING_DIRECTORY: ${{ vars.PROOF_WORKING_DIRECTORY }}
+        run: |
+          configured="$(python3 .proof/run_repository_command.py --command changed-code-coverage --configured)"
+          echo "configured=${configured}" >> "${GITHUB_OUTPUT}"
+
   changed-code-coverage:
     name: Changed Code Coverage
-    if: ${{ vars.PROOF_CHANGED_COVERAGE_COMMAND != '' }}
+    needs: configuration
+    if: ${{ needs.configuration.outputs.configured == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -26,18 +47,12 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - name: Prepare repository for coverage
-        if: ${{ vars.PROOF_SETUP_COMMAND != '' }}
-        working-directory: ${{ vars.PROOF_WORKING_DIRECTORY || '.' }}
-        run: bash -euo pipefail -c "${PROOF_SETUP_COMMAND}"
-        env:
-          PROOF_SETUP_COMMAND: ${{ vars.PROOF_SETUP_COMMAND }}
       - name: Run tests and check changed-code coverage
         id: coverage
-        working-directory: ${{ vars.PROOF_WORKING_DIRECTORY || '.' }}
-        run: bash -euo pipefail -c "${PROOF_CHANGED_COVERAGE_COMMAND}"
+        run: python3 .proof/run_repository_command.py --command changed-code-coverage
         env:
           PROOF_CHANGED_COVERAGE_COMMAND: ${{ vars.PROOF_CHANGED_COVERAGE_COMMAND }}
+          PROOF_SETUP_COMMAND: ${{ vars.PROOF_SETUP_COMMAND }}
           PROOF_COVERAGE_BASE_REF: ${{ github.event.pull_request.base.sha || 'HEAD~1' }}
           PROOF_WORKING_DIRECTORY: ${{ vars.PROOF_WORKING_DIRECTORY }}
           PROOF_MEASUREMENTS_FILE: ${{ runner.temp }}/proof-measurements-input.json
