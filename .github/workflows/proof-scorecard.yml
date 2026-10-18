@@ -30,16 +30,16 @@ jobs:
           ref: ${{ github.event.pull_request.base.sha || github.sha }}
           path: .proof-trusted
           persist-credentials: false
-      - name: Check out candidate Proof configuration
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          path: .proof-candidate
-          persist-credentials: false
-          sparse-checkout: |
-            .proof/policy.yaml
-          sparse-checkout-cone-mode: false
+      - name: Fetch candidate metadata without checkout
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+        run: |
+          python3 .proof-trusted/.proof/fetch_pr_metadata.py \
+            --repository-root .proof-candidate-git \
+            --policy-output .proof-candidate/.proof/policy.yaml
       - name: Validate candidate configuration paths
         run: |
           set -euo pipefail
