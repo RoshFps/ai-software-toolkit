@@ -8,12 +8,6 @@ or evidence contracts require a major release and migration guidance.
 
 ## [Unreleased]
 
-- `tooling/install-skills.sh` no longer requires `rsync`: `--list` and
-  `--dry-run` never needed it, and installs fall back to `cp` and `find` with
-  the same install, merge, and replace results when it is missing.
-- Reject `install-skills.sh --skill` names that are not a single directory name
-  (empty, `.`, `..`, or containing `/`) before anything is written, so a
-  mistyped name cannot point `--replace-existing` outside the skills directory.
 - Add optional fresh-JUnit test-integrity and changed-code coverage helpers,
   TypeScript lint/architecture configurations, and executable defensive-test
   recipes. Each consumer chooses its commands, scope, targets, and mode;
@@ -25,6 +19,9 @@ or evidence contracts require a major release and migration guidance.
 - Preserve consumer edits across successive ordinary toolkit upgrades, including
   installations first adopted without a lock. Unresolved conflicts keep their
   offered canonical hash baseline; each update receives a unique rollback backup.
+- Reject `install-skills.sh --skill` names that are not a single directory name
+  (empty, `.`, `..`, or containing `/`) before anything is written, so a
+  mistyped name cannot point `--replace-existing` outside the skills directory.
 - Recognize Python development dependency groups during command discovery and
   require unittest imports before proposing unittest from test files.
 - Resolve SARIF tool components by GUID when no index is supplied, so extension
@@ -92,6 +89,10 @@ or evidence contracts require a major release and migration guidance.
   `gc.auto`, and `gc.autoDetach` off through git's environment configuration,
   so background git maintenance started by a test's commits can no longer race
   the removal of its temporary repository.
+
+- `tooling/install-skills.sh` no longer requires `rsync`: `--list` and
+  `--dry-run` never needed it, and installs fall back to `cp` and `find` with
+  the same install, merge, and replace results when it is missing.
 
 - Activate `dependency-vulnerability` (Snyk Open Source) as advisory in this
   repository's `.proof/policy.yaml`. The Snyk workflow already ran and
