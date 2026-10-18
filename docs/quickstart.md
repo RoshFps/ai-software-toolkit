@@ -458,3 +458,41 @@ its leaf a regular, non-executable blob of at most 1 MiB. Symlinks and gitlinks
 are rejected before materialization. The trusted parser validates that data;
 enforcement continues to use the trusted base policy. This changes neither
 repository-selected control modes nor required-check settings.
+
+### Checked-in producer commands for fork CI
+
+Repository variables may be unavailable to fork `pull_request` runs. Repositories
+can opt into a checked-in `.proof/commands.json` to select actual commands for
+those runs. `tooling/run_repository_command.py` (installed as
+`.proof/run_repository_command.py`) uses nonempty `PROOF_*` environment values
+first, then this file. The installer never creates or overwrites the file.
+There are no built-in producer commands or passing fallbacks.
+
+```json
+{
+  "version": 1,
+  "setup": "npm ci",
+  "working_directory": ".",
+  "commands": {
+    "build": "npm run build",
+    "unit-tests": "npm test",
+    "format-and-lint": "npm run lint"
+  }
+}
+```
+
+Supported command keys also include `migration-validation` and
+`changed-code-coverage`. Omit unused optional producers. Setup is optional and
+runs before the selected producer; either failure fails the job. Missing or
+blank build, test, lint, or migration commands fail their configured jobs.
+Coverage has a separate configuration-discovery job: without an explicit
+coverage command its producer job remains skipped, never reported as passed.
+The JSON must be a regular non-symlink file no larger than 64 KiB; its working
+directory must exist inside the repository. Commands are shell programs chosen
+by the consuming repository and run only in ordinary read-only-token
+`pull_request` jobs, never in the trusted metadata jobs.
+
+This toolkit checks in its existing build, test, lint, migration and coverage
+commands. The Python demo selects only its documented build and unit-test
+commands; other producers still require repository configuration. Selecting
+commands does not change policy modes, branch rules or required checks.

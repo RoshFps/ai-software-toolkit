@@ -128,10 +128,10 @@ class ActionDistributionTests(unittest.TestCase):
             with self.subTest(filename=filename):
                 workflow = (ROOT / "workflows" / filename).read_text()
                 self.assertNotIn(f"if: ${{{{ vars.{variable} != '' }}}}", workflow)
-                self.assertIn("name: Require configured command", workflow)
-                self.assertIn(f'if [[ -z "${{{variable}}}" ]]; then', workflow)
-                self.assertIn(f"::{variable} is not configured", workflow)
-                self.assertIn("exit 1", workflow)
+                self.assertIn("python3 .proof/run_repository_command.py --command", workflow)
+                self.assertIn(f"{variable}: ${{{{ vars.{variable} }}}}", workflow)
+                self.assertIn("PROOF_SETUP_COMMAND", workflow)
+
 
     def test_all_distributed_workflows_parse(self) -> None:
         ruby = shutil.which("ruby")
@@ -212,7 +212,7 @@ class ActionDistributionTests(unittest.TestCase):
     def test_advisory_changed_coverage_skips_when_unconfigured(self) -> None:
         text = (ROOT / "workflows" / "changed-code-coverage.yml").read_text()
 
-        self.assertIn("vars.PROOF_CHANGED_COVERAGE_COMMAND != ''", text)
+        self.assertIn("needs.configuration.outputs.configured == 'true'", text)
         self.assertIn("PROOF_SETUP_COMMAND", text)
         self.assertIn("PROOF_WORKING_DIRECTORY", text)
 
